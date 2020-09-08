@@ -76,15 +76,39 @@ int main(int argc, char **argv) {
 //    int result = operations::add(variable_a, variable_b);
 //    std::cout << result << std::endl;
 
-    std::cout<< argc << std::endl;
+    std::vector<std::string> files;
+    po::options_description visible("Supported options");
+    visible.add_options()
+            ("help,h", "Print this help message.")
+            (",A", "Show invisible symbols.")
+            ("input-file", po::value<std::vector<std::string>>(&files), "Input files.");
+
+    po::positional_options_description p;
+    p.add("input-file", -1);
+
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).
+            options(visible).positional(p).run(), vm);
+    po::notify(vm);
+
+//    for (auto f:files) {
+//        std::cout<<f<<std::endl;
+//    }
+
+    if (vm.count("help")) {
+        std::cout << "Concatenate given files and output to stdout.\n" << visible << std::endl;
+        return EXIT_SUCCESS;
+    }
+
+    bool a = vm.count("-A") != 0;
 
     int fd;
     std::vector <int> descriptors;
-    std::vector <std::string> files;
-    for(int i = 1; i < argc; i++){
+    for (auto f : files) {
         std::cout<< "sdcc" << std::endl;
 
-        fd = open(argv[i], O_RDONLY);
+        std::cout << f << std::endl;
+        fd = open(f.c_str(), O_RDONLY);
         if(fd == -1){
             return -1;
         }
