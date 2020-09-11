@@ -44,15 +44,15 @@ int read_buffer(int fd, char *buffer, ssize_t size, int *status) {
     return 0;
 }
 
-std::string char_to_hex(int n){
+std::string char_to_hex(int n) {
     std::stringstream ss;
-    ss << "\\x" << std::setfill('0') << std::setw(2) << std::right<< std::hex << n;
+    ss << "\\x" << std::setfill('0') << std::setw(2) << std::right << std::hex << n;
     return ss.str();
 }
 
-char* convert_buffer(char *buffer, int& buf_size, int byte_count){
+char *convert_buffer(char *buffer, int &buf_size, int byte_count) {
     int size = 0;
-    for(int i = 0; i < byte_count; i++) {
+    for (int i = 0; i < byte_count; i++) {
         if (isprint(buffer[i])) {
             size += 1;
         } else {
@@ -62,26 +62,78 @@ char* convert_buffer(char *buffer, int& buf_size, int byte_count){
 
     buf_size = size;
 
-    char* new_buffer;
+    char *new_buffer;
     new_buffer = (char *) malloc(size);
 
     int idx = 0;
-    for(int i = 0; i < byte_count; i++){
-        if(isprint(buffer[i])){
+    for (int i = 0; i < byte_count; i++) {
+        if (isprint(buffer[i])) {
             new_buffer[idx] = buffer[i];
             idx += 1;
-        }
-        else {
+        } else {
             std::string hex_char = char_to_hex(buffer[i]);
             for (int j = 0; j < 4; j++) {
-                new_buffer[idx+j] = hex_char[j];
+                new_buffer[idx + j] = hex_char[j];
             }
             idx += 4;
         }
     }
-
     return new_buffer;
 }
+
+int read_write_files(std::vector<int> descriptors, char *buffer, ssize_t size, int *status) {
+    int s;
+    for (auto fd: descriptors) {
+        size = lseek(fd, 0, SEEK_END);
+        lseek(fd, 0, SEEK_SET);
+        s = 0;
+        while (s + BYTECOUNT < size) {
+            //            if (read_buffer(fd, buffer, BYTECOUNT, status) == -1) {
+            //                std::cerr << "Cannot read " << fd << std::endl;
+            //
+            //            }
+            read_buffer(fd, buffer, BYTECOUNT, status);
+            write_buffer(1, buffer, BYTECOUNT, status);
+            s += BYTECOUNT;
+        }
+        int extra = size - s;
+        read_buffer(fd, buffer, extra, status);
+        write_buffer(1, buffer, extra, status);
+    }
+    return 0;
+}
+
+int read_write_files_a(std::vector<int> descriptors, char *buffer, ssize_t size, int *status) {
+    int new_buf_size;
+    char *new_buffer;
+    int s;
+
+    for (auto fd: descriptors) {
+        size = lseek(fd, 0, SEEK_END);
+        lseek(fd, 0, SEEK_SET);
+        s = 0;
+        while (s + BYTECOUNT < size) {
+//            if (read_buffer(fd, buffer, BYTECOUNT, status) == -1) {
+//                std::cerr << "Cannot read " << fd << std::endl;
+//
+//            }
+            read_buffer(fd, buffer, BYTECOUNT, status);
+
+            new_buffer = convert_buffer(buffer, new_buf_size, BYTECOUNT);
+            write_buffer(1, new_buffer, new_buf_size, status);
+            s += BYTECOUNT;
+        }
+        int extra = size - s;
+        read_buffer(fd, buffer, extra, status);
+
+        new_buffer = convert_buffer(buffer, new_buf_size, extra);
+
+        write_buffer(1, new_buffer, new_buf_size, status);
+    }
+    free(new_buffer);
+    return 0;
+}
+
 
 int main(int argc, char **argv) {
 
@@ -128,95 +180,19 @@ int main(int argc, char **argv) {
     char *buffer;
     buffer = (char *) malloc(BYTECOUNT);
     int *status = 0;
-    int s;
     ssize_t size;
 
-//    for (auto fd: descriptors) {
-//        size = lseek(fd, 0, SEEK_END);
-//        lseek(fd, 0, SEEK_SET);
-//        s = 0;
-//        while (s + BYTECOUNT < size) {
-////            if (read_buffer(fd, buffer, BYTECOUNT, status) == -1) {
-////                std::cerr << "Cannot read " << fd << std::endl;
-////
-////            }
-//            read_buffer(fd, buffer, BYTECOUNT, status);
-//            write_buffer(1, buffer, BYTECOUNT, status);
-//            s += BYTECOUNT;
-//        }
-//        int extra = size - s;
-//        read_buffer(fd, buffer, extra, status);
-//        write_buffer(1, buffer, extra, status);
-//
-//        if (close(fd) == -1) {
-//            std::cerr << "Cannot close " << std::endl;
-//            return -1;
-//        }
-//    }
 
+    if (a) {
+        read_write_files_a(descriptors, buffer, size, status);
+    } else {
+        read_write_files(descriptors, buffer, size, status);
+    }
 
-//    char *new_buffer;
-//    new_buffer = (char *) malloc(BYTECOUNT + 1);
-
-
-    if(a){
-        int new_buf_size;
-        char* new_buffer;
-
-        for (auto fd: descriptors) {
-            size = lseek(fd, 0, SEEK_END);
-            lseek(fd, 0, SEEK_SET);
-            s = 0;
-            while (s + BYTECOUNT < size) {
-//            if (read_buffer(fd, buffer, BYTECOUNT, status) == -1) {
-//                std::cerr << "Cannot read " << fd << std::endl;
-//
-//            }
-                read_buffer(fd, buffer, BYTECOUNT, status);
-
-                new_buffer = convert_buffer(buffer, new_buf_size, BYTECOUNT);
-//                for(int i = 0; i < BYTECOUNT; i++) {
-//                    if (isprint(buffer[i])) {
-//                        buf_size += 1;
-//                    } else {
-//                        buf_size += 4;
-//                    }
-//                }
-//
-//                char* new_buffer;
-//                new_buffer = (char *) malloc(buf_size);
-//
-//                int idx = 0;
-//                for(int i = 0; i < BYTECOUNT; i++){
-//                    if(isprint(buffer[i])){
-//                        new_buffer[idx] = buffer[i];
-//                        idx += 1;
-//                    }
-//                    else {
-//                        std::string hex_char = char_to_hex(buffer[i]);
-//                        for (int j = 0; j < 4; j++) {
-//                            new_buffer[idx+j] = hex_char[j];
-//                        }
-//                        idx += 4;
-//                    }
-//                }
-
-                write_buffer(1, new_buffer, new_buf_size, status);
-                s += BYTECOUNT;
-            }
-            int extra = size - s;
-            read_buffer(fd, buffer, extra, status);
-
-            new_buffer = convert_buffer(buffer, new_buf_size, extra);
-
-            write_buffer(1, new_buffer, new_buf_size, status);
-
-            if (close(fd) == -1) {
-                std::cerr << "Cannot close " << std::endl;
-                return -1;
-            }
-
-
+    for (auto fd: descriptors) {
+        if (close(fd) == -1) {
+            std::cerr << "Cannot close " << std::endl;
+            return -1;
         }
     }
 
