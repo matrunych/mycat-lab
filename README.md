@@ -1,8 +1,9 @@
-# Lab 2 Option 3: Adder
+# Lab 2: mycat
 
 ## Team
 
- - [Volodymyr Chernetskyi](https://github.com/chernetskyi)
+ - [Olena Matrunych](https://github.com/matrunych)
+ - [Danylo Nazaruk](https://github.com/H4wking)
 
 ## Prerequisites
 

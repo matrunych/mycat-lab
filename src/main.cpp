@@ -3,6 +3,7 @@
 #include <vector>
 //#include "operations/operations.hpp"
 #include <fcntl.h>
+#include <iomanip>
 
 #define BYTECOUNT 255
 
@@ -16,6 +17,7 @@ int write_buffer(int fd, char *buffer, ssize_t size, int *status) {
                 continue;
             else {
                 *status = errno;
+//                std::cerr << "Cannot write " << fd << std::endl;
                 return -1;
             }
         } else
@@ -33,6 +35,7 @@ int read_buffer(int fd, char *buffer, ssize_t size, int *status) {
                 continue;
             else {
                 *status = errno;
+//                std::cerr << "Cannot read " << fd << std::endl;
                 return -1;
             }
         } else
@@ -41,6 +44,22 @@ int read_buffer(int fd, char *buffer, ssize_t size, int *status) {
     return 0;
 }
 
+std::string char_to_hex(int n){
+    std::stringstream ss;
+    ss << "\\x" << std::setfill('0') << std::setw(2) << std::right<< std::hex << n;
+    return ss.str();
+}
+
+void convert_buffer(char *buffer, char* new_buffer){
+    for(int i = 0; i < BYTECOUNT; i++){
+        if(isprint(buffer[i])){
+            new_buffer[i] = buffer[i];
+        }
+//        else{
+//            new_buffer[i] = char_to_hex(buffer[i]);
+//        }
+    }
+}
 
 int main(int argc, char **argv) {
 
@@ -85,29 +104,74 @@ int main(int argc, char **argv) {
 
 
     char *buffer;
-    buffer = (char *) malloc(BYTECOUNT + 1);
-    int status;
+    buffer = (char *) malloc(BYTECOUNT);
+    int *status = 0;
     int s;
+    ssize_t size;
 
-    for (auto fd: descriptors) {
-        off_t size = lseek(fd, 0, SEEK_END);
-        lseek(fd, 0, SEEK_SET);
-        s = 0;
-        while (s + BYTECOUNT < size) {
-            read_buffer(fd, buffer, BYTECOUNT, &status);
-            write_buffer(1, buffer, BYTECOUNT, &status);
-            s += BYTECOUNT;
-        }
-        int extra = size - s;
-        read_buffer(fd, buffer, extra, &status);
-        write_buffer(1, buffer, extra, &status);
+//    for (auto fd: descriptors) {
+//        size = lseek(fd, 0, SEEK_END);
+//        lseek(fd, 0, SEEK_SET);
+//        s = 0;
+//        while (s + BYTECOUNT < size) {
+////            if (read_buffer(fd, buffer, BYTECOUNT, status) == -1) {
+////                std::cerr << "Cannot read " << fd << std::endl;
+////
+////            }
+//            read_buffer(fd, buffer, BYTECOUNT, status);
+//            write_buffer(1, buffer, BYTECOUNT, status);
+//            s += BYTECOUNT;
+//        }
+//        int extra = size - s;
+//        read_buffer(fd, buffer, extra, status);
+//        write_buffer(1, buffer, extra, status);
+//
+//        if (close(fd) == -1) {
+//            std::cerr << "Cannot close " << std::endl;
+//            return -1;
+//        }
+//    }
 
-        if (close(fd) == -1) {
-            std::cerr << "Cannot close " << std::endl;
-            return -1;
+
+    char *new_buffer;
+    new_buffer = (char *) malloc(BYTECOUNT + 1);
+
+
+    if(a){
+        for (auto fd: descriptors) {
+            size = lseek(fd, 0, SEEK_END);
+            lseek(fd, 0, SEEK_SET);
+            s = 0;
+            while (s + BYTECOUNT < size) {
+//            if (read_buffer(fd, buffer, BYTECOUNT, status) == -1) {
+//                std::cerr << "Cannot read " << fd << std::endl;
+//
+//            }
+                read_buffer(fd, buffer, BYTECOUNT, status);
+
+                for(int i = 0; i < size; i++){
+                    if(isprint(buffer[i])){
+                        new_buffer[i] = buffer[i];
+                    } else{
+                        new_buffer[i] = char_to_hex(buffer[i]);
+                    }
+                }
+
+                write_buffer(1, new_buffer, BYTECOUNT, status);
+                s += BYTECOUNT;
+            }
+            int extra = size - s;
+            read_buffer(fd, buffer, extra, status);
+            write_buffer(1, buffer, extra, status);
+
+            if (close(fd) == -1) {
+                std::cerr << "Cannot close " << std::endl;
+                return -1;
+            }
+
+
         }
     }
-
 
     return EXIT_SUCCESS;
 }
