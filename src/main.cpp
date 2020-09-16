@@ -3,7 +3,6 @@
 #include <vector>
 //#include "operations/operations.hpp"
 #include <fcntl.h>
-#include <iomanip>
 
 #define BYTECOUNT 255
 
@@ -46,7 +45,7 @@ int read_buffer(int fd, char *buffer, ssize_t size, int *status) {
 
 std::string char_to_hex(int n) {
     std::stringstream ss;
-    ss << "\\x" << std::setfill('0') << std::setw(2) << std::right << std::hex << n;
+    ss << "\\x" << std::uppercase << std::hex << n;
     return ss.str();
 }
 
@@ -67,11 +66,11 @@ char *convert_buffer(char *buffer, int &buf_size, int byte_count) {
 
     int idx = 0;
     for (int i = 0; i < byte_count; i++) {
-        if (isprint(buffer[i])) {
+        if (isprint(buffer[i]) || isspace(buffer[i])) {
             new_buffer[idx] = buffer[i];
             idx += 1;
         } else {
-            std::string hex_char = char_to_hex(buffer[i]);
+            std::string hex_char = char_to_hex((unsigned char) buffer[i]);
             for (int j = 0; j < 4; j++) {
                 new_buffer[idx + j] = hex_char[j];
             }
@@ -90,6 +89,7 @@ int read_write_files(std::vector<int> descriptors, char *buffer, ssize_t size, i
         while (s + BYTECOUNT < size) {
             //            if (read_buffer(fd, buffer, BYTECOUNT, status) == -1) {
             //                std::cerr << "Cannot read " << fd << std::endl;
+
             //
             //            }
             read_buffer(fd, buffer, BYTECOUNT, status);
@@ -161,13 +161,10 @@ int main(int argc, char **argv) {
     }
 
     bool a = vm.count("-A") != 0;
-    std::cout << a << std::endl;
-
 
     int fd;
     std::vector<int> descriptors;
     for (auto f : files) {
-        std::cout << f << std::endl;
         fd = open(f.c_str(), O_RDONLY);
         if (fd == -1) {
             std::cerr << "Cannot open " << f << std::endl;
