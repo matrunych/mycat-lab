@@ -4,7 +4,7 @@
 //#include "operations/operations.hpp"
 #include <fcntl.h>
 
-#define BYTECOUNT 255
+#define BYTECOUNT 256
 
 
 int write_buffer(int fd, char *buffer, ssize_t size, int *status) {
@@ -52,7 +52,7 @@ std::string char_to_hex(int n) {
 char *convert_buffer(char *buffer, int &buf_size, int byte_count) {
     int size = 0;
     for (int i = 0; i < byte_count; i++) {
-        if (isprint(buffer[i])) {
+        if (isprint(buffer[i]) || isspace(buffer[i])) {
             size += 1;
         } else {
             size += 4;
@@ -122,6 +122,8 @@ int read_write_files_a(std::vector<int> descriptors, char *buffer, ssize_t size,
             new_buffer = convert_buffer(buffer, new_buf_size, BYTECOUNT);
             write_buffer(1, new_buffer, new_buf_size, status);
             s += BYTECOUNT;
+
+            free(new_buffer);
         }
         int extra = size - s;
         read_buffer(fd, buffer, extra, status);
@@ -129,8 +131,8 @@ int read_write_files_a(std::vector<int> descriptors, char *buffer, ssize_t size,
         new_buffer = convert_buffer(buffer, new_buf_size, extra);
 
         write_buffer(1, new_buffer, new_buf_size, status);
+        free(new_buffer);
     }
-    free(new_buffer);
     return 0;
 }
 
