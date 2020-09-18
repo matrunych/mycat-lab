@@ -13,9 +13,9 @@ include(cmake/config.cmake)
 
 # Project source compilation
 include_directories(inc)
-add_library(operations SHARED src/operations.cpp inc/operations/operations.hpp)
+add_library(buffer_operations SHARED src/buffer_operations.cpp inc/buffer_operations.hpp)
 add_executable(mycat src/main.cpp)
-target_link_libraries(mycat operations)
+target_link_libraries(mycat buffer_operations)
 
 # Add external packages
 find_package(Boost 1.65.1 COMPONENTS program_options REQUIRED)
@@ -32,5 +32,5 @@ if (ENABLE_SANITIZERS)
     find_package(Sanitizers)
 
     # CMake targets to which apply sanitizers
-    add_sanitizers(operations add)
+    add_sanitizers(buffer_operations add)
 endif ()

@@ -1,140 +1,8 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 #include <vector>
-//#include "operations/operations.hpp"
 #include <fcntl.h>
-
-#define BYTECOUNT 256
-
-
-int write_buffer(int fd, char *buffer, ssize_t size, int *status) {
-    ssize_t written_bytes = 0;
-    while (written_bytes < size) {
-        ssize_t written_now = write(fd, buffer + written_bytes, size - written_bytes);
-        if (written_now == -1) {
-            if (errno == EINTR)
-                continue;
-            else {
-                *status = errno;
-//                std::cerr << "Cannot write " << fd << std::endl;
-                return -1;
-            }
-        } else
-            written_bytes += written_now;
-    }
-    return 0;
-}
-
-int read_buffer(int fd, char *buffer, ssize_t size, int *status) {
-    ssize_t read_bytes = 0;
-    while (read_bytes < size) {
-        ssize_t read_now = read(fd, buffer + read_bytes, size - read_bytes);
-        if (read_now == -1) {
-            if (errno == EINTR)
-                continue;
-            else {
-                *status = errno;
-//                std::cerr << "Cannot read " << fd << std::endl;
-                return -1;
-            }
-        } else
-            read_bytes += read_now;
-    }
-    return 0;
-}
-
-std::string char_to_hex(int n) {
-    std::stringstream ss;
-    ss << "\\x" << std::uppercase << std::hex << n;
-    return ss.str();
-}
-
-char *convert_buffer(char *buffer, int &buf_size, int byte_count) {
-    int size = 0;
-    for (int i = 0; i < byte_count; i++) {
-        if (isprint(buffer[i]) || isspace(buffer[i])) {
-            size += 1;
-        } else {
-            size += 4;
-        }
-    }
-
-    buf_size = size;
-
-    char *new_buffer;
-    new_buffer = (char *) malloc(size);
-
-    int idx = 0;
-    for (int i = 0; i < byte_count; i++) {
-        if (isprint(buffer[i]) || isspace(buffer[i])) {
-            new_buffer[idx] = buffer[i];
-            idx += 1;
-        } else {
-            std::string hex_char = char_to_hex((unsigned char) buffer[i]);
-            for (int j = 0; j < 4; j++) {
-                new_buffer[idx + j] = hex_char[j];
-            }
-            idx += 4;
-        }
-    }
-    return new_buffer;
-}
-
-int read_write_files(std::vector<int> descriptors, char *buffer, ssize_t size, int *status) {
-    int s;
-    for (auto fd: descriptors) {
-        size = lseek(fd, 0, SEEK_END);
-        lseek(fd, 0, SEEK_SET);
-        s = 0;
-        while (s + BYTECOUNT < size) {
-            //            if (read_buffer(fd, buffer, BYTECOUNT, status) == -1) {
-            //                std::cerr << "Cannot read " << fd << std::endl;
-
-            //
-            //            }
-            read_buffer(fd, buffer, BYTECOUNT, status);
-            write_buffer(1, buffer, BYTECOUNT, status);
-            s += BYTECOUNT;
-        }
-        int extra = size - s;
-        read_buffer(fd, buffer, extra, status);
-        write_buffer(1, buffer, extra, status);
-    }
-    return 0;
-}
-
-int read_write_files_a(std::vector<int> descriptors, char *buffer, ssize_t size, int *status) {
-    int new_buf_size;
-    char *new_buffer;
-    int s;
-
-    for (auto fd: descriptors) {
-        size = lseek(fd, 0, SEEK_END);
-        lseek(fd, 0, SEEK_SET);
-        s = 0;
-        while (s + BYTECOUNT < size) {
-//            if (read_buffer(fd, buffer, BYTECOUNT, status) == -1) {
-//                std::cerr << "Cannot read " << fd << std::endl;
-//
-//            }
-            read_buffer(fd, buffer, BYTECOUNT, status);
-
-            new_buffer = convert_buffer(buffer, new_buf_size, BYTECOUNT);
-            write_buffer(1, new_buffer, new_buf_size, status);
-            s += BYTECOUNT;
-
-            free(new_buffer);
-        }
-        int extra = size - s;
-        read_buffer(fd, buffer, extra, status);
-
-        new_buffer = convert_buffer(buffer, new_buf_size, extra);
-
-        write_buffer(1, new_buffer, new_buf_size, status);
-        free(new_buffer);
-    }
-    return 0;
-}
+#include "buffer_operations.hpp"
 
 
 int main(int argc, char **argv) {
@@ -190,12 +58,12 @@ int main(int argc, char **argv) {
 
     for (auto fd: descriptors) {
         if (close(fd) == -1) {
-            std::cerr << "Cannot close " << std::endl;
-            return -1;
+            std::cerr << "Cannot close " << fd << std::endl;
+            return -4;
         }
     }
 
     free(buffer);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
